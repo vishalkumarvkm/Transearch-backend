@@ -64,6 +64,8 @@ services:
       - ME_CONFIG_MONGODB_SERVER=mongodb
       - ME_CONFIG_MONGODB_PORT=27017
       - ME_CONFIG_BASICAUTH=false
+      - ME_CONFIG_BASICAUTH_USERNAME=
+      - ME_CONFIG_BASICAUTH_PASSWORD=
     depends_on:
       mongodb:
         condition: service_healthy
