@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # -------------------------------------------------------------
+  # 1. MongoDB Database Container
+  # -------------------------------------------------------------
+  mongodb:
+    image: mongo:7.0
+    container_name: transearch-mongodb
+    restart: always
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=transearch_voice_db
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - transearch-net
+
+  # -------------------------------------------------------------
+  # 2. Python FastAPI Backend Container
+  # -------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: transearch-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - MONGODB_URI=mongodb://mongodb:27017
+      - MONGODB_DB_NAME=transearch_voice_db
+      - ADMIN_USERNAME=admin@transearch.com
+      - ADMIN_PASSWORD=transearch2025
+      - JWT_SECRET=transearch-executive-secret-key-2025-secure
+      - ALLOWED_ORIGINS=https://transearchai.com,https://www.transearchai.com,http://187.126.124.110:3000,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3005
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - transearch-net
+
+  # -------------------------------------------------------------
+  # 3. Mongo Express (Interactive Web UI for MongoDB)
+  # -------------------------------------------------------------
+  mongo-express:
+    image: mongo-express:latest
+    container_name: transearch-mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH=false
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - transearch-net
+
+# -------------------------------------------------------------
+# Persistent Volumes & Networks
+# -------------------------------------------------------------
+volumes:
+  mongodb_data:
+    name: transearch_mongodb_data
+
+networks:
+  transearch-net:
+    name: transearch_network
+    driver: bridge
